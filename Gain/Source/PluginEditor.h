@@ -37,7 +37,8 @@
 */
 class GainAudioProcessorEditor  : public AudioProcessorEditor,
                                   public Timer,
-                                  public juce::Slider::Listener
+                                  public juce::Slider::Listener,
+                                  public juce::Button::Listener
 {
 public:
     //==============================================================================
@@ -55,6 +56,7 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
     void sliderValueChanged (juce::Slider* sliderThatWasMoved) override;
+    void buttonClicked (juce::Button* buttonThatWasClicked) override;
 
 
 
@@ -65,6 +67,9 @@ private:
     //==============================================================================
     std::unique_ptr<juce::Slider> gainSlider;
     std::unique_ptr<juce::Label> gainLabel;
+    std::unique_ptr<juce::Slider> delaySlider;
+    std::unique_ptr<juce::Label> delayLabel;
+    std::unique_ptr<juce::ToggleButton> muteButton;
 
 
     //==============================================================================
