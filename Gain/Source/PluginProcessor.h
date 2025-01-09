@@ -9,7 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-
+#include <vector>
 //==============================================================================
 /**
 */
@@ -62,6 +62,15 @@ public:
     bool NeedsUIUpdate() { return UIUpdateFlag; };
     void RequestUIUpdate() { UIUpdateFlag = true; };
     void ClearUIUpdateFlag() { UIUpdateFlag = false; };
+    float M_max_sec;
+    int M_max;
+    std::vector<float> dl;
+    int index_IN;
+    int index_OUT;
+    int Fs;
+    float M_sec;
+    int M;
+    bool isMuted;
 private:
     //==============================================================================
     float UserParams[totalNumParam];
