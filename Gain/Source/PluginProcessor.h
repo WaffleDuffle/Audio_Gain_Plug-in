@@ -13,7 +13,7 @@
 //==============================================================================
 /**
 */
-class GainAudioProcessor  : public juce::AudioProcessor
+class GainAudioProcessor : public juce::AudioProcessor
 {
 public:
     //==============================================================================
@@ -21,14 +21,14 @@ public:
     ~GainAudioProcessor() override;
 
     //==============================================================================
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-   #ifndef JucePlugin_PreferredChannelConfigurations
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-   #endif
+#ifndef JucePlugin_PreferredChannelConfigurations
+    bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
+#endif
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
@@ -45,35 +45,36 @@ public:
     //==============================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const juce::String getProgramName (int index) override;
-    void changeProgramName (int index, const juce::String& newName) override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
 
     int getNumParameters() override;
     float getParameter(int index) override;
     void setParameter(int index, float newValue) override;
     const String getParameterName(int index) override;
     const String getParameterText(int index) override;
-    enum Parameters { gain = 0, totalNumParam };
+    enum Parameters { gain = 0, delay = 1, frecv = 2, totalNumParam };
     bool NeedsUIUpdate() { return UIUpdateFlag; };
     void RequestUIUpdate() { UIUpdateFlag = true; };
     void ClearUIUpdateFlag() { UIUpdateFlag = false; };
-    float M_max_sec;
-    int M_max;
+    bool isMuted;
     std::vector<float> dl;
+private:
+    //==============================================================================
+
+    int M_max;
+    
     int index_IN;
     int index_OUT;
     int Fs;
-    float M_sec;
     int M;
-    bool isMuted;
-private:
-    //==============================================================================
+
     float UserParams[totalNumParam];
     bool UIUpdateFlag; //Valoare booleana pentru reimprospatarea interfetei grafice
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GainAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GainAudioProcessor)
 };
