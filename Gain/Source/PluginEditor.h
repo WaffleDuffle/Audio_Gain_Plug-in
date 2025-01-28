@@ -48,7 +48,7 @@ public:
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
     void timerCallback();
-    GainAudioProcessor* getProcessor() const{
+    GainAudioProcessor* getProcessor() const {
         return static_cast <GainAudioProcessor*>(getAudioProcessor());
     }
     //[/UserMethods]
@@ -70,6 +70,8 @@ private:
     std::unique_ptr<juce::Slider> delaySlider;
     std::unique_ptr<juce::Label> delayLabel;
     std::unique_ptr<juce::ToggleButton> muteButton;
+    std::unique_ptr<juce::Slider> frecvSlider;
+    std::unique_ptr<juce::Label> frecvLabel;
 
 
     //==============================================================================
