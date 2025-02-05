@@ -23,16 +23,27 @@ GainAudioProcessor::GainAudioProcessor()
 #endif
 {
     UserParams[gain] = 1.0f; // implicit castigul este 1
-    UserParams[delay] = 1.0f;
-    UserParams[frecv] = 20000.0f;
-    UIUpdateFlag = true; // se cere update de la interfața grafică
+    UserParams[delay] = 0.0f;
+    UserParams[frecv] = 1.0f;
+    UserParams[compRatio] = 1;
+    UserParams[threshold] = 1;
+    
     Fs = 44100;
     M_max = 10 * Fs;
-    dl.resize(M_max, 0.0f);
-    index_IN = 0;
-    index_OUT = 0;
-    M = UserParams[delay] * Fs;
+    resetDelay();
+    w[0][0] = 0;
+    w[0][1] = 0;
+    w[1][0] = 0;
+    w[1][1] = 0;
+    
+    rmsAverage = 0.01;
+    attackTime = 0.05;    // all in seconds
+    releaseTime = 0.2;
+    delayTime = 0.005;
+    delaySamples = trunc(delayTime * Fs);
+    resetCompression();
 
+    UIUpdateFlag = true; // se cere update de la interfața grafică
 }
 
 GainAudioProcessor::~GainAudioProcessor()
@@ -106,6 +117,10 @@ void GainAudioProcessor::changeProgramName(int index, const juce::String& newNam
 void GainAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
+    float valNorm = UserParams[frecv];
+    float ft = valNorm * (20000.f - 20.f) + 20.f;
+    coeffCalc(ft, sampleRate);
+    
     // initialisation that you need..
 }
 
@@ -141,6 +156,55 @@ bool GainAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) cons
 }
 #endif
 
+void GainAudioProcessor::resetDelay()
+{
+    dl.clear();
+    dl.resize(M_max, 0.0f);
+    index_IN = 0;
+    index_OUT = 0;
+    M = UserParams[delay] * Fs;
+}
+
+void GainAudioProcessor::resetCompression()
+{
+    buffer.clear();
+    buffer.resize(delaySamples, 0.0f);
+    bufferIndex = 0;
+    rmsLevel = 0.0f;
+    smoothGain = 1.0f;
+}
+
+float GainAudioProcessor::filterSampleFTJ(float in, int ch)
+{
+    float aux = in - a[1] * w[ch][0] - a[2] * w[ch][1];
+    float out = b[0] * aux + b[1] * w[ch][0] + b[2] * w[ch][1];
+    w[ch][1] = w[ch][0];
+    w[ch][0] = aux;
+    return out;
+}
+
+void GainAudioProcessor::coeffCalc(float ft, float fs)
+{
+    float K = tanf(juce::float_Pi * ft / fs);
+    float Q = 1 / sqrtf(2);
+    float num = K * K * Q + K + Q;
+
+    b[0] = K * K * Q / num;
+    b[1] = 2 * b[0];
+    b[2] = b[0];
+
+    a[0] = 1;
+    a[1] = 2 * Q * (K * K - 1) / num;
+    a[2] = (K * K * Q - K + Q) / num;
+}
+
+void GainAudioProcessor::alphaCalc(float fs)
+{
+    alphaAvg = exp(-1 / (fs * rmsAverage));
+    alphaAt = exp(-1 / (fs * attackTime));
+    alphaRt = exp(-1 / (fs * releaseTime));
+}
+
 void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -168,8 +232,9 @@ void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
 
     if (isMuted == 1) {
         buffer.clear();
+        UIUpdateFlag = true;
     }
-    else {
+    else if(isDelay == 1){
         
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
@@ -179,17 +244,27 @@ void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             
             for (int j = 0; j < buffer.getNumSamples(); j++)
             {
-                
+                channelDataY[j] = filterSampleFTJ(channelDataY[j], channel);
                 index_OUT = index_IN - M;
-
-
                 index_OUT = (M_max + index_OUT - M) % M_max;
 
                 channelDataY[j] = channelDataX[j] + UserParams[gain] * dl[index_OUT];
-             //   channelDataY[j] = channelDataY[j] * UserParams[gain] * 10;
+                channelDataY[j] = channelDataY[j] * UserParams[gain];
                 dl[index_IN] = channelDataX[j];
 
                 index_IN = (index_IN + 1) % M_max;
+            }
+        }
+    }
+    else {
+        
+        for (int channel = 0; channel < totalNumInputChannels; ++channel)
+        {
+            auto* channelData = buffer.getWritePointer(channel);
+            for (int j = 0; j < buffer.getNumSamples(); j++)
+            {
+                channelData[j] = filterSampleFTJ(channelData[j], channel);
+                channelData[j] = channelData[j] * UserParams[gain];
             }
         }
     }
@@ -224,6 +299,13 @@ void GainAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 
     el = root.createNewChildElement("Frecv");
     el->addTextElement(String(UserParams[frecv]));
+
+    el = root.createNewChildElement("compRatio");
+    el->addTextElement(String(UserParams[compRatio]));
+
+    el = root.createNewChildElement("threshold");
+    el->addTextElement(String(UserParams[threshold]));
+
     copyXmlToBinary(root, destData);
 }
 
@@ -254,6 +336,18 @@ void GainAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
                 String text = pChild->getAllSubText();
                 setParameter(frecv, text.getFloatValue());
             }
+
+            if (pChild->hasTagName("CompRatio"))
+            {
+                String text = pChild->getAllSubText();
+                setParameter(frecv, text.getFloatValue());
+            }
+
+            if (pChild->hasTagName("Threshold"))
+            {
+                String text = pChild->getAllSubText();
+                setParameter(frecv, text.getFloatValue());
+            }
         }
         UIUpdateFlag = true;
     }
@@ -276,6 +370,12 @@ float GainAudioProcessor::getParameter(int index)
 
     case frecv:
         return UserParams[frecv];
+    
+    case compRatio:
+        return UserParams[compRatio];
+
+    case threshold:
+        return UserParams[threshold];
 
     default: return 0.0f; // index invalid
     }
@@ -283,6 +383,7 @@ float GainAudioProcessor::getParameter(int index)
 
 void GainAudioProcessor::setParameter(int index, float newValue)
 {
+    float ft;
     switch (index)
     {
     case gain:
@@ -291,16 +392,23 @@ void GainAudioProcessor::setParameter(int index, float newValue)
 
     case delay:
         UserParams[delay] = newValue;
-        dl.clear();
-        dl.resize(M_max, 0.0f);
-        index_IN = 0;
-        index_OUT = 0;
-        M = UserParams[delay] * Fs;
-
+        resetDelay();
         break;
 
     case frecv:
         UserParams[frecv] = newValue;
+        ft = newValue * (20000.f - 20.f) + 20.f;
+        coeffCalc(ft, getSampleRate());
+        break;
+    
+    case compRatio:
+        UserParams[compRatio] = newValue;
+        resetCompression();
+        break;
+    
+    case threshold:
+        UserParams[threshold] = newValue;
+        resetCompression();
         break;
 
     default: return;
@@ -321,6 +429,11 @@ const String GainAudioProcessor::getParameterName(int index)
     case frecv: return "Frecv";
         break;
 
+    case compRatio: return "CompRatio";
+        break;
+
+    case threshold: return "Threshold";
+        break;
     default:return String();
     }
 }
@@ -331,6 +444,7 @@ const String GainAudioProcessor::getParameterText(int index)
         return String(UserParams[index]);
     else return String();
 }
+
 
 //==============================================================================
 // This creates new instances of the plugin..
