@@ -58,6 +58,11 @@ public:
     void sliderValueChanged (juce::Slider* sliderThatWasMoved) override;
     void buttonClicked (juce::Button* buttonThatWasClicked) override;
 
+    // Binary resources:
+    static const char* mountainspinkskytwilightsunsetdusksnowcovered3840x21608263_jpeg;
+    static const int mountainspinkskytwilightsunsetdusksnowcovered3840x21608263_jpegSize;
+    static const char* plugin_background_jpeg;
+    static const int plugin_background_jpegSize;
 
 
 private:
@@ -72,6 +77,12 @@ private:
     std::unique_ptr<juce::ToggleButton> muteButton;
     std::unique_ptr<juce::Slider> frecvSlider;
     std::unique_ptr<juce::Label> frecvLabel;
+    std::unique_ptr<juce::ToggleButton> delayButton;
+    std::unique_ptr<juce::Slider> compSlider;
+    std::unique_ptr<juce::Label> compLabel;
+    std::unique_ptr<juce::Slider> thresholdSlider;
+    std::unique_ptr<juce::Label> thresholdLabel;
+    juce::Image cachedImage_plugin_background_jpeg_1;
 
 
     //==============================================================================
