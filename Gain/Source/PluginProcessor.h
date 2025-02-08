@@ -83,12 +83,8 @@ private:
     float rmsAverage;
     float attackTime;
     float releaseTime;
-    float delayTime;
-    int delaySamples;
     float rmsLevel;
-    float smoothGain;
-    int bufferIndex;
-    std::vector<float> buffer;
+    float smoothGain[2];
     float alphaAvg;
     float alphaAt;
     float alphaRt;
@@ -98,6 +94,7 @@ private:
     void GainAudioProcessor::coeffCalc(float ft, float fs);
     void GainAudioProcessor::resetCompression();
     void GainAudioProcessor::alphaCalc(float fs);
+    float GainAudioProcessor::compression(float in, int channel);
     float UserParams[totalNumParam];
     bool UIUpdateFlag; //Valoare booleana pentru reimprospatarea interfetei grafice
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GainAudioProcessor)
