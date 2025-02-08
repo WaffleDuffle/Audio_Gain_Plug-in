@@ -26,7 +26,7 @@ GainAudioProcessor::GainAudioProcessor()
     UserParams[delay] = 0.0f;
     UserParams[frecv] = 1.0f;
     UserParams[compRatio] = 1;
-    UserParams[threshold] = 1;
+    UserParams[threshold] = 0;
     
     Fs = 44100;
     M_max = 10 * Fs;
@@ -39,9 +39,12 @@ GainAudioProcessor::GainAudioProcessor()
     rmsAverage = 0.01;
     attackTime = 0.05;    // all in seconds
     releaseTime = 0.2;
-    delayTime = 0.005;
-    delaySamples = trunc(delayTime * Fs);
-    resetCompression();
+    rmsLevel = 0.0f;
+    smoothGain[0] = 1.0f;
+    smoothGain[1] = 1.0f;
+
+    alphaCalc(Fs);
+  
 
     UIUpdateFlag = true; // se cere update de la interfața grafică
 }
@@ -49,6 +52,7 @@ GainAudioProcessor::GainAudioProcessor()
 GainAudioProcessor::~GainAudioProcessor()
 {
     dl.clear();
+    
 }
 
 //==============================================================================
@@ -117,6 +121,8 @@ void GainAudioProcessor::changeProgramName(int index, const juce::String& newNam
 void GainAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
+   
+   
     float valNorm = UserParams[frecv];
     float ft = valNorm * (20000.f - 20.f) + 20.f;
     coeffCalc(ft, sampleRate);
@@ -165,15 +171,6 @@ void GainAudioProcessor::resetDelay()
     M = UserParams[delay] * Fs;
 }
 
-void GainAudioProcessor::resetCompression()
-{
-    buffer.clear();
-    buffer.resize(delaySamples, 0.0f);
-    bufferIndex = 0;
-    rmsLevel = 0.0f;
-    smoothGain = 1.0f;
-}
-
 float GainAudioProcessor::filterSampleFTJ(float in, int ch)
 {
     float aux = in - a[1] * w[ch][0] - a[2] * w[ch][1];
@@ -203,6 +200,31 @@ void GainAudioProcessor::alphaCalc(float fs)
     alphaAvg = exp(-1 / (fs * rmsAverage));
     alphaAt = exp(-1 / (fs * attackTime));
     alphaRt = exp(-1 / (fs * releaseTime));
+}
+
+float GainAudioProcessor::compression(float in, int channel)
+{
+    rmsLevel = alphaAvg * rmsLevel + (1 - alphaAvg) * (in * in);
+    float rmsLevel_dB = 10 * log10(rmsLevel + 0.0001f);
+    float gain_dB;
+
+    if (rmsLevel_dB > UserParams[threshold])
+        gain_dB = UserParams[compRatio] * (UserParams[threshold] - rmsLevel_dB);
+    else
+        gain_dB = 0;
+
+    float targetGain = pow(10, gain_dB / 20);
+    float c;
+    if (targetGain < smoothGain[channel])
+        c = alphaAt;
+    else
+        c = alphaRt;
+  //  DBG("RMS Level: " << rmsLevel << " Smooth Gain: " << smoothGain << " Target Gain: " << targetGain);
+    smoothGain[channel] = (1 - c) * smoothGain[channel] + c * targetGain;
+
+    float out = smoothGain[channel] * in;
+
+    return out;
 }
 
 void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -235,7 +257,6 @@ void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         UIUpdateFlag = true;
     }
     else if(isDelay == 1){
-        
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
             auto* channelDataX = buffer.getReadPointer(channel);
@@ -264,6 +285,9 @@ void GainAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             for (int j = 0; j < buffer.getNumSamples(); j++)
             {
                 channelData[j] = filterSampleFTJ(channelData[j], channel);
+
+                channelData[j] = compression(channelData[j], channel);
+
                 channelData[j] = channelData[j] * UserParams[gain];
             }
         }
@@ -340,13 +364,13 @@ void GainAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
             if (pChild->hasTagName("CompRatio"))
             {
                 String text = pChild->getAllSubText();
-                setParameter(frecv, text.getFloatValue());
+                setParameter(compRatio, text.getFloatValue());
             }
 
             if (pChild->hasTagName("Threshold"))
             {
                 String text = pChild->getAllSubText();
-                setParameter(frecv, text.getFloatValue());
+                setParameter(threshold, text.getFloatValue());
             }
         }
         UIUpdateFlag = true;
@@ -403,12 +427,12 @@ void GainAudioProcessor::setParameter(int index, float newValue)
     
     case compRatio:
         UserParams[compRatio] = newValue;
-        resetCompression();
+
         break;
     
     case threshold:
         UserParams[threshold] = newValue;
-        resetCompression();
+
         break;
 
     default: return;
