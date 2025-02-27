@@ -11,7 +11,7 @@ function output = compressor(input, fs, threshold_dB, ratio)
     bufferIndex = 1; 
     output = zeros(size(input)); 
     
-    % constante de timp
+    % time constants
     alphaAvg = exp(-1 / (fs * rmsAverage)); 
     alphaAt = exp(-1 / (fs * attackTime));   
     alphaRt = exp(-1 / (fs * releaseTime));  
