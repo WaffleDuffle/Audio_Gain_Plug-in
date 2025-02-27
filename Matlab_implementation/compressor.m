@@ -6,8 +6,8 @@ function output = compressor(input, fs, threshold_dB, ratio)
     delaySamples = round(delayTime * fs);  
 
     rmsLevel = 0;         
-    smoothGain = 1;            % gain factor pentru smoothing
-    buffer = zeros(1, delaySamples); % buffer circular
+    smoothGain = 1;            % gain factor for smoothing
+    buffer = zeros(1, delaySamples); % circular buffer
     bufferIndex = 1; 
     output = zeros(size(input)); 
     
