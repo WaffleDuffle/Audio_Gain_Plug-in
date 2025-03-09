@@ -1,14 +1,14 @@
-# GetLife
+# Audio
 ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ![logo](https://github.com/WaffleDuffle/Audio_Gain_plug-in/blob/main/pictures/Plug_in_interface.png)
 
-Develop a scheduling system to allow patients to schedule hospital appointments through a `graphical interface (GUI)` made using the Tkinter library in Python. This project aims to streamline the scheduling process, facilitating patients' access to medical services.
+Developed an Audio plug-in with `graphical interface (GUI)` with C++ and JUCE Framework. This project aims to facilitate my needs regarding my interest in music engineering.
 
 ## Functionalities
 ### 1. Graphical interface:
-Design an intuitive and attractive GUI using Tkinter, ensuring patients can easily interact with the system.
+Interactive user interface with cool background.
 
-### 2. Doctor Profiles:
-Create profiles for each doctor, displaying information such as name, specialty, availability and contact details.
+### 2. Gain adjustement:
+TODO.
 
 ### 3. Scheduling:
 Implement a system that allows patients to schedule consultations by selecting their preferred date and time slot from the available options.
