@@ -1,7 +1,7 @@
 # Audio
 ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ![logo](https://github.com/WaffleDuffle/Audio_Gain_plug-in/blob/main/pictures/Plug_in_interface.png)
 
-Developed an Audio plug-in with `graphical interface (GUI)` with C++ and JUCE Framework. This project aims to facilitate my needs regarding my interest in audio engineering.
+Developed an audio plug-in with `graphical interface (GUI)` with C++ and JUCE Framework. This project aims to facilitate my needs regarding my interest in audio engineering.
 
 ## Functionalities
 ### 1. Graphical interface:
